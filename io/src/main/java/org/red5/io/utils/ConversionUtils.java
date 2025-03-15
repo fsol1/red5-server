@@ -163,6 +163,10 @@ public class ConversionUtils {
         } else if (sourceClassName.equals("java.util.ImmutableCollections$MapN")) {
             return convertMapToBean((Map) source, target);
         }
+
+        if (source instanceof List<?>) {
+            return convertListToSet((List<?>) source);
+        }
         throw new ConversionException(String.format("Unable to preform conversion from %s to %s", source, target));
     }
 
@@ -401,6 +405,17 @@ public class ConversionUtils {
      */
     public static Set<?> convertArrayToSet(Object[] source) {
         return Arrays.stream(source).collect(Collectors.toCollection(HashSet::new));
+    }
+
+    /**
+     * Convert list to set, removing duplicates
+     *
+     * @param source
+     *            Source list
+     * @return Set
+     */
+    public static Set<?> convertListToSet(List<?> source) {
+        return source.stream().collect(Collectors.toCollection(HashSet::new));
     }
 
     /**
