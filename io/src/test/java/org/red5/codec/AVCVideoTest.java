@@ -177,6 +177,10 @@ public class AVCVideoTest {
         Path path = Paths.get("target/test-classes/fixtures/ipadmini-A7.flv");
         try {
             File file = path.toFile();
+
+            // check if the file exists
+            assertTrue(file.exists());
+
             log.info("Reading: {}", file.getName());
             FLVReader reader = new FLVReader(file, true);
             ITag tag = null;

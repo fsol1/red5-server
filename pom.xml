@@ -89,7 +89,7 @@
         <!-- dont skip building the tests -->
         <maven.test.skip>false</maven.test.skip>
         <!-- skip running the tests -->
-        <skipTests>true</skipTests>
+        <skipTests>false</skipTests>
         <!-- to be or not to be verbose -->
         <verbose>false</verbose>
         <maven.compiler.verbose>false</maven.compiler.verbose>
