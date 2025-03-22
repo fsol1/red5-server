@@ -108,6 +108,72 @@ public class FileUtil {
     }
 
     /**
+     * Deletes a directory's files.
+     *
+     * @param directory
+     *            directory to empty
+     */
+    public static void deleteDirectoryFiles(File dir) {
+        for (File file : dir.listFiles()) {
+            if (file.delete()) {
+                log.debug("{} was deleted", file.getName());
+            } else {
+                log.debug("{} was not deleted", file.getName());
+                file.deleteOnExit();
+            }
+            file = null;
+        }
+    }
+
+    /**
+     * Deletes a directory and its contents using OS
+     *
+     * @param directory
+     *            directory to delete
+     * 
+     * @return true if directory was successfully deleted
+     */
+    public static boolean deleteDirectoryWithOS(String directory) {
+        boolean result = false;
+        Process p = null;
+        Thread std = null;
+
+        try {
+            Runtime runTime = Runtime.getRuntime();
+            log.debug("Execute runtime");
+            //determine file system type
+            if (File.separatorChar == '\\') {
+                //we are windows
+                p = runTime.exec("CMD /D /C \"RMDIR /Q /S " + directory.replace('/', '\\') + "\"");
+            } else {
+                //we are unix variant
+                p = runTime.exec("rm -rf " + directory.replace('\\', File.separatorChar));
+            }
+            // observe std out
+            std = stdOut(p);
+            // wait for the observer threads to finish
+            while (std.isAlive()) {
+                try {
+                    Thread.sleep(250);
+                } catch (Exception e) {
+                }
+            }
+            log.debug("Process threads wait exited");
+            result = true;
+        } catch (Exception e) {
+            log.error("Error running delete script", e);
+        } finally {
+            if (null != p) {
+                log.debug("Destroying process");
+                p.destroy();
+                p = null;
+            }
+            std = null;
+        }
+        return result;
+    }
+
+    /**
      * Deletes a directory and its contents. This will fail if there are any file locks or if the directory cannot be emptied.
      *
      * @param directory
@@ -123,16 +189,9 @@ public class FileUtil {
         if (!useOSNativeDelete) {
             File dir = new File(directory);
             // first all files have to be cleared out
-            for (File file : dir.listFiles()) {
-                if (file.delete()) {
-                    log.debug("{} was deleted", file.getName());
-                } else {
-                    log.debug("{} was not deleted", file.getName());
-                    file.deleteOnExit();
-                }
-                file = null;
-            }
-            // not you may remove the dir
+            deleteDirectoryFiles(dir);
+
+            // now you may remove the dir
             if (dir.delete()) {
                 log.debug("Directory was deleted");
                 result = true;
@@ -142,40 +201,7 @@ public class FileUtil {
             }
             dir = null;
         } else {
-            Process p = null;
-            Thread std = null;
-            try {
-                Runtime runTime = Runtime.getRuntime();
-                log.debug("Execute runtime");
-                //determine file system type
-                if (File.separatorChar == '\\') {
-                    //we are windows
-                    p = runTime.exec("CMD /D /C \"RMDIR /Q /S " + directory.replace('/', '\\') + "\"");
-                } else {
-                    //we are unix variant
-                    p = runTime.exec("rm -rf " + directory.replace('\\', File.separatorChar));
-                }
-                // observe std out
-                std = stdOut(p);
-                // wait for the observer threads to finish
-                while (std.isAlive()) {
-                    try {
-                        Thread.sleep(250);
-                    } catch (Exception e) {
-                    }
-                }
-                log.debug("Process threads wait exited");
-                result = true;
-            } catch (Exception e) {
-                log.error("Error running delete script", e);
-            } finally {
-                if (null != p) {
-                    log.debug("Destroying process");
-                    p.destroy();
-                    p = null;
-                }
-                std = null;
-            }
+            result = deleteDirectoryWithOS(directory);
         }
         return result;
     }
