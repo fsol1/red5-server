@@ -26,6 +26,8 @@ public class AACAudio extends AbstractAudio {
 
     public static final int[] AAC_SAMPLERATES = { 96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350 };
 
+    public static final long MILLISECONDS_IN_A_SECOND = 1000L;
+
     /**
      * Block of data (AAC DecoderConfigurationRecord)
      */
@@ -102,6 +104,6 @@ public class AACAudio extends AbstractAudio {
 
     @SuppressWarnings("unused")
     private static long sample2TC(long time, int sampleRate) {
-        return (time * 1000L / sampleRate);
+        return (time * MILLISECONDS_IN_A_SECOND / sampleRate);
     }
 }
