@@ -246,54 +246,6 @@ public class ScopeUtils {
     }
 
     /**
-     * Returns scope service by bean name. See overloaded method for details.
-     *
-     * @param scope
-     *            scope
-     * @param name
-     *            name
-     * @return object
-     */
-    protected static Object getScopeService(IScope scope, String name) {
-        return getScopeService(scope, name, null);
-    }
-
-    /**
-     * Returns scope services (e.g. SharedObject, etc) for the scope. Method uses either bean name passes as a string or class object.
-     *
-     * @param scope
-     *            The scope service belongs to
-     * @param name
-     *            Bean name
-     * @param defaultClass
-     *            Class of service
-     * @return Service object
-     */
-    @SuppressWarnings("null")
-    protected static Object getScopeService(IScope scope, String name, Class<?> defaultClass) {
-        if (scope != null) {
-            final IContext context = scope.getContext();
-            ApplicationContext appCtx = context.getApplicationContext();
-            Object result;
-            if (!appCtx.containsBean(name)) {
-                if (defaultClass == null) {
-                    return null;
-                }
-                try {
-                    result = defaultClass.getDeclaredConstructor().newInstance();
-                } catch (Exception e) {
-                    log.error("{}", e);
-                    return null;
-                }
-            } else {
-                result = appCtx.getBean(name);
-            }
-            return result;
-        }
-        return null;
-    }
-
-    /**
      * Returns scope service that implements a given interface.
      *
      * @param scope
@@ -382,4 +334,51 @@ public class ScopeUtils {
         return handler;
     }
 
+    /**
+     * Returns scope service by bean name. See overloaded method for details.
+     *
+     * @param scope
+     *            scope
+     * @param name
+     *            name
+     * @return object
+     */
+    protected static Object getScopeService(IScope scope, String name) {
+        return getScopeService(scope, name, null);
+    }
+
+    /**
+     * Returns scope services (e.g. SharedObject, etc) for the scope. Method uses either bean name passes as a string or class object.
+     *
+     * @param scope
+     *            The scope service belongs to
+     * @param name
+     *            Bean name
+     * @param defaultClass
+     *            Class of service
+     * @return Service object
+     */
+    @SuppressWarnings("null")
+    protected static Object getScopeService(IScope scope, String name, Class<?> defaultClass) {
+        if (scope != null) {
+            final IContext context = scope.getContext();
+            ApplicationContext appCtx = context.getApplicationContext();
+            Object result;
+            if (!appCtx.containsBean(name)) {
+                if (defaultClass == null) {
+                    return null;
+                }
+                try {
+                    result = defaultClass.getDeclaredConstructor().newInstance();
+                } catch (Exception e) {
+                    log.error("{}", e);
+                    return null;
+                }
+            } else {
+                result = appCtx.getBean(name);
+            }
+            return result;
+        }
+        return null;
+    }
 }

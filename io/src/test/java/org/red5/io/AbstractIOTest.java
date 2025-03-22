@@ -95,7 +95,7 @@ public abstract class AbstractIOTest {
 
     @Test
     public void testSerializationBooleanValue() {
-        log.debug("\testSerializationBooleanValue");
+        log.debug("\ntestSerializationBooleanValue");
         Serializer.serialize(out, Boolean.TRUE);
         dumpOutput();
         Boolean val = Deserializer.deserialize(in, Boolean.class);
