@@ -140,18 +140,6 @@ public class OutboundHandshake extends RTMPHandshake {
                 log.trace("Outgoing DH offset: {}", clientDHOffset);
                 // adds the public key to handshake bytes
                 System.arraycopy(outgoingPublicKey, 0, handshakeBytes, clientDHOffset, KEY_LENGTH);
-                // perform special processing for each type if needed
-                switch (handshakeType) {
-                    case RTMPConnection.RTMP_ENCRYPTED:
-
-                        break;
-                    case RTMPConnection.RTMP_ENCRYPTED_XTEA:
-
-                        break;
-                    case RTMPConnection.RTMP_ENCRYPTED_BLOWFISH:
-
-                        break;
-                }
             }
             digestPosClient = getDigestOffset(algorithm, handshakeBytes, 0);
             log.debug("Client digest position offset: {} algorithm: {}", digestPosClient, algorithm);

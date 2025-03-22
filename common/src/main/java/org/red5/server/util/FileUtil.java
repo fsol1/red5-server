@@ -130,7 +130,7 @@ public class FileUtil {
      *
      * @param directory
      *            directory to delete
-     * 
+     *
      * @return true if directory was successfully deleted
      */
     public static boolean deleteDirectoryWithOS(String directory) {
