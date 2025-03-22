@@ -66,8 +66,8 @@ public abstract class AbstractIOTest {
     abstract void setupIO();
 
     @Test
-    public void testArray() {
-        log.debug("\ntestArray");
+    public void testSerializationStringArray() {
+        log.debug("\testSerializationStringArray");
         String[] strArrIn = new String[] { "This", "Is", "An", "Array", "Of", "Strings" };
         Serializer.serialize(out, strArrIn);
         dumpOutput();
@@ -94,8 +94,8 @@ public abstract class AbstractIOTest {
     }
 
     @Test
-    public void testBoolean() {
-        log.debug("\ntestBoolean");
+    public void testSerializationBooleanValue() {
+        log.debug("\testSerializationBooleanValue");
         Serializer.serialize(out, Boolean.TRUE);
         dumpOutput();
         Boolean val = Deserializer.deserialize(in, Boolean.class);
