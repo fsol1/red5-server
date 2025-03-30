@@ -68,15 +68,16 @@ public class MP4FrameTest extends TestCase {
         frame8.setOffset(900);
         frames.add(frame8);
 
-        System.out.printf("Frame 1 - time: %s (should be 660)\n", frames.get(2).getTime());
+        assertEquals(660.0, frames.get(2).getTime());
 
         Collections.sort(frames);
 
-        System.out.println("After sorting");
+        List<Double> timesInOrder = List.of(1.0, 3.0, 6.0, 400.0, 660.0, 1000.0, 1000.0, 1000.0);
 
-        int f = 1;
+        int f = 0;
         for (MP4Frame frame : frames) {
-            System.out.printf("Frame %s - time: %s offset: %s\n", f++, frame.getTime(), frame.getOffset());
+            assertEquals(timesInOrder.get(f), frame.getTime());
+            f++;
         }
 
     }
