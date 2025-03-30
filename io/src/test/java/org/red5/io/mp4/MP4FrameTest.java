@@ -82,4 +82,52 @@ public class MP4FrameTest extends TestCase {
 
     }
 
+    @Test
+    public void testCompareToEquals() {
+        MP4Frame frame1 = new MP4Frame();
+        frame1.setTime(400);
+        frame1.setOffset(400);
+        MP4Frame frame2 = new MP4Frame();
+        frame2.setTime(400);
+        frame2.setOffset(400);
+
+        assertEquals(0, frame1.compareTo(frame2));
+    }
+
+    @Test
+    public void testCompareToEqualsDifferentOffsets() {
+        MP4Frame frame1 = new MP4Frame();
+        frame1.setTime(400);
+        frame1.setOffset(500);
+        MP4Frame frame2 = new MP4Frame();
+        frame2.setTime(400);
+        frame2.setOffset(400);
+
+        assertEquals(1, frame1.compareTo(frame2));
+    }
+
+    @Test
+    public void testCompareToBigger() {
+        MP4Frame frame1 = new MP4Frame();
+        frame1.setTime(400);
+        frame1.setOffset(400);
+        MP4Frame frame2 = new MP4Frame();
+        frame2.setTime(200);
+        frame2.setOffset(400);
+
+        assertEquals(1, frame1.compareTo(frame2));
+    }
+
+    @Test
+    public void testCompareToSmaller() {
+        MP4Frame frame1 = new MP4Frame();
+        frame1.setTime(400);
+        frame1.setOffset(400);
+        MP4Frame frame2 = new MP4Frame();
+        frame2.setTime(200);
+        frame2.setOffset(400);
+
+        assertEquals(-1, frame2.compareTo(frame1));
+    }
+
 }
