@@ -100,21 +100,6 @@ public class ServerStream extends AbstractStream implements IServerStream, IFilt
     private boolean isRepeat;
 
     /**
-     * List of items in this playlist
-     */
-    protected CopyOnWriteArrayList<IPlayItem> items;
-
-    /**
-     * Current item index
-     */
-    private int currentItemIndex;
-
-    /**
-     * Current item
-     */
-    protected IPlayItem currentItem;
-
-    /**
      * Message input
      */
     private IMessageInput msgIn;
@@ -177,121 +162,99 @@ public class ServerStream extends AbstractStream implements IServerStream, IFilt
      */
     private Message message;
 
+    /**
+     * Item
+     */
+    private Item item;
+
     /** Constructs a new ServerStream. */
     public ServerStream() {
         defaultController = new SimplePlaylistController();
-        items = new CopyOnWriteArrayList<>();
         message = new Message();
+        item = new Item();
     }
 
     /** {@inheritDoc} */
     public void addItem(IPlayItem item) {
-        items.add(item);
+        this.item.addItem(item);
     }
 
     /** {@inheritDoc} */
     public void addItem(IPlayItem item, int index) {
-        IPlayItem prev = items.get(index);
-        if (prev != null && prev instanceof SimplePlayItem) {
-            // since it replaces the item in the current spot, reset the items time so the sort will work
-            ((SimplePlayItem) item).setCreated(((SimplePlayItem) prev).getCreated() - 1);
-        }
-        items.add(index, item);
-        if (index <= currentItemIndex) {
-            // item was added before the currently playing
-            currentItemIndex++;
-        }
+        this.item.addItem(item, index);
     }
 
     /** {@inheritDoc} */
     public void removeItem(int index) {
-        if (index < 0 || index >= items.size()) {
-            return;
-        }
-        items.remove(index);
-        if (index < currentItemIndex) {
-            // item was removed before the currently playing
-            currentItemIndex--;
-        } else if (index == currentItemIndex) {
-            // TODO: the currently playing item is removed - this should be handled differently
-            currentItemIndex--;
-        }
+        this.item.removeItem(index);
     }
 
     /** {@inheritDoc} */
     public void removeAllItems() {
-        currentItemIndex = 0;
-        items.clear();
+        this.item.removeAllItems();
     }
 
     /** {@inheritDoc} */
     public int getItemSize() {
-        return items.size();
+        return this.item.getItemSize();
     }
 
     public CopyOnWriteArrayList<IPlayItem> getItems() {
-        return items;
+        return this.item.getItems();
     }
 
     /** {@inheritDoc} */
     public int getCurrentItemIndex() {
-        return currentItemIndex;
+        return this.item.getCurrentItemIndex();
     }
 
     /** {@inheritDoc} */
     public IPlayItem getCurrentItem() {
-        return currentItem;
+        return this.item.getCurrentItem();
     }
 
     /** {@inheritDoc} */
     public IPlayItem getItem(int index) {
-        try {
-            return items.get(index);
-        } catch (IndexOutOfBoundsException e) {
-            return null;
-        }
+        return this.item.getItem(index);
     }
 
     /** {@inheritDoc} */
     public void previousItem() {
         stop();
         moveToPrevious();
-        if (currentItemIndex == -1) {
+        int index = this.item.getCurrentItemIndex();
+        if (index == -1) {
             return;
         }
-        IPlayItem item = items.get(currentItemIndex);
+        IPlayItem item = this.item.getItems().get(index);
         play(item);
     }
 
     /** {@inheritDoc} */
     public boolean hasMoreItems() {
-        int nextItem = currentItemIndex + 1;
-        if (nextItem >= items.size() && !isRepeat) {
-            return false;
-        } else {
-            return true;
-        }
+        return this.item.hasMoreItems(isRepeat);
     }
 
     /** {@inheritDoc} */
     public void nextItem() {
         stop();
         moveToNext();
-        if (currentItemIndex == -1) {
+        int index = this.item.getCurrentItemIndex();
+        if (index == -1) {
             return;
         }
-        IPlayItem item = items.get(currentItemIndex);
+        IPlayItem item = this.item.getItems().get(index);
         play(item);
     }
 
     /** {@inheritDoc} */
     public void setItem(int index) {
-        if (index < 0 || index >= items.size()) {
+        if (index < 0 || index >= this.item.getItemSize()) {
             return;
         }
         stop();
-        currentItemIndex = index;
-        IPlayItem item = items.get(currentItemIndex);
+        this.item.setCurrentItemIndex(index);
+        IPlayItem item = this.item.getItems().get(index);
         play(item);
     }
 
@@ -425,7 +388,7 @@ public class ServerStream extends AbstractStream implements IServerStream, IFilt
         if (state.get() != StreamState.UNINIT) {
             throw new IllegalStateException("State " + state + " not valid to start");
         }
-        if (items.size() == 0) {
+        if (this.item.getItemSize() == 0) {
             throw new IllegalStateException("At least one item should be specified to start");
         }
         if (publishedName == null) {
@@ -442,7 +405,7 @@ public class ServerStream extends AbstractStream implements IServerStream, IFilt
             log.warn("Context beans were not available; this is ok during unit testing", npe);
         }
         setState(StreamState.STOPPED);
-        currentItemIndex = -1;
+        this.item.setCurrentItemIndex(-1);
         nextItem();
     }
 
@@ -580,7 +543,7 @@ public class ServerStream extends AbstractStream implements IServerStream, IFilt
                 }
             }
             setState(StreamState.PLAYING);
-            currentItem = item;
+            this.item.setCurrentItem(item);
             sendResetMessage();
             if (msgIn != null) {
                 msgIn.subscribe(this, null);
@@ -749,11 +712,12 @@ public class ServerStream extends AbstractStream implements IServerStream, IFilt
 
     private boolean doPushMessage() {
         boolean sent = false;
-        long start = currentItem.getStart();
+        IPlayItem curItem = this.item.getCurrentItem();
+        long start = curItem.getStart();
         if (start < 0) {
             start = 0;
         }
-        if (currentItem.getLength() >= 0 && nextTS - start > currentItem.getLength()) {
+        if (curItem.getLength() >= 0 && nextTS - start > curItem.getLength()) {
             onItemEnd();
             return sent;
         }
@@ -845,13 +809,15 @@ public class ServerStream extends AbstractStream implements IServerStream, IFilt
      * Move to the next item updating the currentItemIndex.
      */
     protected void moveToNext() {
-        if (currentItemIndex >= items.size()) {
-            currentItemIndex = items.size() - 1;
+        int index = this.item.getCurrentItemIndex();
+        int size = this.item.getItemSize();
+        if (index >= size) {
+            this.item.setCurrentItemIndex(size - 1);
         }
         if (controller != null) {
-            currentItemIndex = controller.nextItem(this, currentItemIndex);
+            this.item.setCurrentItemIndex(controller.nextItem(this, index));
         } else {
-            currentItemIndex = defaultController.nextItem(this, currentItemIndex);
+            this.item.setCurrentItemIndex(defaultController.nextItem(this, index));
         }
     }
 
@@ -859,13 +825,15 @@ public class ServerStream extends AbstractStream implements IServerStream, IFilt
      * Move to the previous item updating the currentItemIndex.
      */
     protected void moveToPrevious() {
-        if (currentItemIndex >= items.size()) {
-            currentItemIndex = items.size() - 1;
+        int index = this.item.getCurrentItemIndex();
+        int size = this.item.getItemSize();
+        if (index >= size) {
+            this.item.setCurrentItemIndex(size - 1);
         }
         if (controller != null) {
-            currentItemIndex = controller.previousItem(this, currentItemIndex);
+            this.item.setCurrentItemIndex(controller.previousItem(this, index));
         } else {
-            currentItemIndex = defaultController.previousItem(this, currentItemIndex);
+            this.item.setCurrentItemIndex(defaultController.previousItem(this, index));
         }
     }
 
@@ -887,8 +855,8 @@ public class ServerStream extends AbstractStream implements IServerStream, IFilt
      */
     @Override
     public String toString() {
-        return "ServerStream [publishedName=" + publishedName + ", controller=" + controller + ", defaultController=" + defaultController + ", isRewind=" + isRewind + ", isRandom=" + isRandom + ", isRepeat=" + isRepeat + ", items=" + items + ", currentItemIndex=" + currentItemIndex + ", currentItem=" + currentItem + ", providerService=" + providerService + ", scheduler=" + scheduler + ", liveJobName=" + liveJobName
-                + ", vodJobName=" + vodJobName + ", vodStartTS=" + vodStartTS + ", serverStartTS=" + serverStartTS + ", nextTS=" + nextTS + "]";
+        return "ServerStream [publishedName=" + publishedName + ", controller=" + controller + ", defaultController=" + defaultController + ", isRewind=" + isRewind + ", isRandom=" + isRandom + ", isRepeat=" + isRepeat + ", items=" + this.item.getItems() + ", currentItemIndex=" + this.item.getCurrentItemIndex() + ", currentItem=" + this.item.getCurrentItem() + ", providerService=" + providerService + ", scheduler="
+                + scheduler + ", liveJobName=" + liveJobName + ", vodJobName=" + vodJobName + ", vodStartTS=" + vodStartTS + ", serverStartTS=" + serverStartTS + ", nextTS=" + nextTS + "]";
     }
 
 }
