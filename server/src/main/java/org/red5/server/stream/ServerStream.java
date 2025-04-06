@@ -172,10 +172,16 @@ public class ServerStream extends AbstractStream implements IServerStream, IFilt
      */
     private WeakReference<IRecordingListener> recordingListener;
 
+    /**
+     * Message
+     */
+    private Message message;
+
     /** Constructs a new ServerStream. */
     public ServerStream() {
         defaultController = new SimplePlaylistController();
         items = new CopyOnWriteArrayList<>();
+        message = new Message();
     }
 
     /** {@inheritDoc} */
@@ -616,34 +622,14 @@ public class ServerStream extends AbstractStream implements IServerStream, IFilt
      *            Message
      */
     private void pushMessage(IMessage message) throws IOException {
-        if (msgOut != null) {
-            msgOut.pushMessage(message);
-        }
-        // Notify listeners about received packet
-        if (message instanceof RTMPMessage) {
-            final IRTMPEvent rtmpEvent = ((RTMPMessage) message).getBody();
-            if (rtmpEvent instanceof IStreamPacket) {
-                for (IStreamListener listener : getStreamListeners()) {
-                    try {
-                        listener.packetReceived(this, (IStreamPacket) rtmpEvent);
-                    } catch (Exception e) {
-                        log.error("Error while notifying listener " + listener, e);
-                    }
-                }
-            }
-        }
+        this.message.pushMessage(message, msgOut, listeners, this, log);
     }
 
     /**
      * Send reset message
      */
     private void sendResetMessage() {
-        // Send new reset message
-        try {
-            pushMessage(new ResetMessage());
-        } catch (IOException err) {
-            log.error("Error while sending reset message.", err);
-        }
+        this.message.sendResetMessage(msgOut, listeners, this, log);
     }
 
     /**
@@ -789,22 +775,7 @@ public class ServerStream extends AbstractStream implements IServerStream, IFilt
      * @return Next RTMP message
      */
     protected RTMPMessage getNextRTMPMessage() {
-        IMessage message;
-        do {
-            // Pull message from message input object...
-            try {
-                message = msgIn.pullMessage();
-            } catch (Exception err) {
-                log.error("Error while pulling message.", err);
-                message = null;
-            }
-            // If message is null then return null
-            if (message == null) {
-                return null;
-            }
-        } while (!(message instanceof RTMPMessage));
-        // Cast and return
-        return (RTMPMessage) message;
+        return this.message.getNextRTMPMessage(msgIn, log);
     }
 
     /**
